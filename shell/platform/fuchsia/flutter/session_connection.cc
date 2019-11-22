@@ -29,6 +29,23 @@ SessionConnection::SessionConnection(
   session_wrapper_.set_error_handler(
       [callback = session_error_callback](zx_status_t status) { callback(); });
 
+  /*
+ session_wrapper_.set_on_frame_presented_handler(
+      [this, handle = vsync_event_handle_](
+          fuchsia::scenic::scheduling::FramePresentedInfo info) {
+        presentation_callback_pending_ = false;
+        //VsyncRecorder::GetInstance().UpdateVsyncInfo(info);
+        // Process pending PresentSession() calls.
+        if (present_session_pending_) {
+          present_session_pending_ = false;
+          PresentSession();
+        }
+        ToggleSignal(handle, true);
+      }  // callback
+  );
+ */
+
+
   session_wrapper_.SetDebugName(debug_label_);
 
   // TODO(SCN-975): Re-enable.
@@ -91,7 +108,7 @@ void SessionConnection::EnqueueClearOps() {
 }
 
 void SessionConnection::PresentSession() {
-  TRACE_EVENT0("gfx", "SessionConnection::PresentSession");
+  TRACE_EVENT0("gfx", "SessionConnection::PresentSession AHHH");
   while (processed_present_session_trace_id_ < next_present_session_trace_id_) {
     TRACE_FLOW_END("gfx", "SessionConnection::PresentSession",
                    processed_present_session_trace_id_);
@@ -106,20 +123,9 @@ void SessionConnection::PresentSession() {
   // Flush all session ops. Paint tasks may not yet have executed but those are
   // fenced. The compositor can start processing ops while we finalize paint
   // tasks.
-  session_wrapper_.Present(
-      0,  // presentation_time. (placeholder).
-      [this, handle = vsync_event_handle_](
-          fuchsia::images::PresentationInfo presentation_info) {
-        presentation_callback_pending_ = false;
-        VsyncRecorder::GetInstance().UpdateVsyncInfo(presentation_info);
-        // Process pending PresentSession() calls.
-        if (present_session_pending_) {
-          present_session_pending_ = false;
-          PresentSession();
-        }
-        ToggleSignal(handle, true);
-      }  // callback
-  );
+  session_wrapper_.Present2(9, 9, [](fuchsia::scenic::scheduling::FuturePresentationTimes info) {
+      FML_LOG(INFO) << "future presentation times size: " << info.future_presentations.size();
+      });
 
   // Prepare for the next frame. These ops won't be processed till the next
   // present.
