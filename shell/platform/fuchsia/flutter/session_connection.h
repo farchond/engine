@@ -82,8 +82,13 @@ class SessionConnection final {
   uint64_t next_present_session_trace_id_ = 0;
   uint64_t processed_present_session_trace_id_ = 0;
 
-  bool presentation_callback_pending_ = false;
-  bool present_session_pending_ = false;
+  //bool presentation_callback_pending_ = false;
+  //bool present_session_pending_ = false;
+
+  int num_present_sessions_pending_ = 0;
+  int num_presentation_callbacks_pending_ = 0;
+
+  static constexpr int kMaxFramesInFlight = 0;
 
   void EnqueueClearOps();
 

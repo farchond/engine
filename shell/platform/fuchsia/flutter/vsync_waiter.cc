@@ -110,6 +110,11 @@ void VsyncWaiter::FireCallbackNow() {
                                               vsync_info.presentation_interval);
   fml::TimePoint previous_vsync = next_vsync - vsync_info.presentation_interval;
 
+  TRACE_EVENT2("flutter", "VsyncWaiter::FireCallbackNowPrevous", "previous vsync", previous_vsync.ToEpochDelta().ToMicroseconds(),"now", fml::TimePoint::Now().ToEpochDelta().ToMicroseconds());
+  TRACE_EVENT2("flutter", "VsyncWaiter::FireCallbackNowLatch", "latch point", vsync_info.latch_time.ToEpochDelta().ToMicroseconds(), 
+      "next_vsync", next_vsync.ToEpochDelta().ToMicroseconds());
+  TRACE_EVENT2("flutter", "VsyncWaiter::FireCallbackNowNext", "now", fml::TimePoint::Now().ToEpochDelta().ToMicroseconds(),
+      "next_vsync", next_vsync.ToEpochDelta().ToMicroseconds());
   FireCallback(previous_vsync, next_vsync);
 }
 

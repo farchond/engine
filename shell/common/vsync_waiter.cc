@@ -98,6 +98,7 @@ void VsyncWaiter::FireCallback(fml::TimePoint frame_start_time,
     // request we did not make. This is a paranoid check but we still want to
     // make sure we catch misbehaving vsync implementations.
     TRACE_EVENT_INSTANT0("flutter", "MismatchedFrameCallback");
+    FML_CHECK(false);
     return;
   }
 

@@ -15,6 +15,7 @@ namespace flutter_runner {
 
 struct VsyncInfo {
   fml::TimePoint presentation_time;
+  fml::TimePoint latch_time;
   fml::TimeDelta presentation_interval;
 };
 
@@ -32,12 +33,17 @@ class VsyncRecorder {
   // information will be saved (in order to handle edge cases involving
   // multiple scenic sessions in the same process).  This function is safe to
   // call from any thread.
-  void UpdateVsyncInfo(fuchsia::images::PresentationInfo presentation_info);
+  void UpdateFramePresentedInfo(fuchsia::scenic::scheduling::FramePresentedInfo info);
+
+  void UpdateFuturePresentationTimes(fuchsia::scenic::scheduling::FuturePresentationTimes info);
 
  private:
-  VsyncRecorder() = default;
+  VsyncRecorder() {
+    next_presentation_info_.set_presentation_time(0);
+    next_presentation_info_.set_latch_point(0);
+  }
 
-  std::optional<fuchsia::images::PresentationInfo> last_presentation_info_;
+  fuchsia::scenic::scheduling::PresentationInfo next_presentation_info_;
 
   // Disallow copy and assignment.
   VsyncRecorder(const VsyncRecorder&) = delete;

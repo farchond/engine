@@ -27,16 +27,17 @@ VsyncRecorder& VsyncRecorder::GetInstance() {
 VsyncInfo VsyncRecorder::GetCurrentVsyncInfo() const {
   {
     std::unique_lock<std::mutex> lock(g_mutex);
-    if (last_presentation_info_) {
       return {fml::TimePoint::FromEpochDelta(fml::TimeDelta::FromNanoseconds(
-                  last_presentation_info_->presentation_time)),
-              fml::TimeDelta::FromNanoseconds(
-                  last_presentation_info_->presentation_interval)};
-    }
+                  next_presentation_info_.presentation_time())),
+      fml::TimePoint::FromEpochDelta(fml::TimeDelta::FromNanoseconds(
+                  next_presentation_info_.latch_point())),
+                  kDefaultPresentationInterval
+    };
   }
-  return {fml::TimePoint::Now(), kDefaultPresentationInterval};
+  return {fml::TimePoint::Now(), fml::TimePoint::Now(), kDefaultPresentationInterval};
 }
 
+/*
 void VsyncRecorder::UpdateVsyncInfo(
     fuchsia::images::PresentationInfo presentation_info) {
   std::unique_lock<std::mutex> lock(g_mutex);
@@ -47,6 +48,25 @@ void VsyncRecorder::UpdateVsyncInfo(
   } else if (!last_presentation_info_) {
     last_presentation_info_ = presentation_info;
   }
+}
+*/
+
+void VsyncRecorder::UpdateFramePresentedInfo(fuchsia::scenic::scheduling::FramePresentedInfo info) {
+
+}
+
+void VsyncRecorder::UpdateFuturePresentationTimes(fuchsia::scenic::scheduling::FuturePresentationTimes info) {
+  std::unique_lock<std::mutex> lock(g_mutex);
+
+  // Get earliest vsync time that is past our current time.
+  for (auto& presentation_info : info.future_presentations) {
+    if (presentation_info.presentation_time() > next_presentation_info_.presentation_time()) {
+      next_presentation_info_.set_presentation_time(presentation_info.presentation_time());
+      next_presentation_info_.set_latch_point(presentation_info.latch_point());
+      break;
+    }
+  }
+
 }
 
 }  // namespace flutter_runner
