@@ -82,7 +82,14 @@ class SessionConnection final {
   uint64_t next_present_session_trace_id_ = 0;
   uint64_t processed_present_session_trace_id_ = 0;
 
-  bool presentation_callback_pending_ = false;
+  // The maximum number of frames Flutter sent to Scenic that it can have
+  // outstanding at any time. This is equivalent to how many times it has
+  // called Present2() before receiving an OnFramePresented() event.
+  static constexpr int kMaxFramesInFlight = 2;
+  int frames_in_flight_ = 0;
+
+  int frames_in_flight_allowed_ = 0;
+
   bool present_session_pending_ = false;
 
   void EnqueueClearOps();
