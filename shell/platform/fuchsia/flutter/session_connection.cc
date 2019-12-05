@@ -34,6 +34,25 @@ SessionConnection::SessionConnection(
   session_wrapper_.set_error_handler(
       [callback = session_error_callback](zx_status_t status) { callback(); });
 
+  // Set the |fuchsia::ui::scenic::OnFramePresented()| event handler that will
+  // fire every time a set of one or more frames is presented.
+  session_wrapper_.set_on_frame_presented_handler(
+      [this, handle = vsync_event_handle_](
+          fuchsia::scenic::scheduling::FramePresentedInfo info) {
+        size_t num_presents_handled = info.presentation_infos.size();
+
+        // Since this event is fired on a per-presentation not per-submission
+        // basis, we may have had multiple Present2() calls all end here.
+        frames_in_flight_ -= num_presents_handled;
+        FML_CHECK(frames_in_flight_ >= 0);
+
+        if (present_session_pending_) {
+          PresentSession();
+        }
+        ToggleSignal(handle, true);
+      }  // callback
+  );
+
   session_wrapper_.SetDebugName(debug_label_);
 
   // TODO(SCN-975): Re-enable.
@@ -44,10 +63,24 @@ SessionConnection::SessionConnection(
   root_node_.SetEventMask(fuchsia::ui::gfx::kMetricsEventMask |
                           fuchsia::ui::gfx::kSizeChangeHintEventMask);
 
-  // Signal is initially high indicating availability of the session.
-  ToggleSignal(vsync_event_handle_, true);
+  // Get information to finish initialization and only then allow Present()s.
+  session_wrapper_.RequestPresentationTimes(
+      /*requested_prediction_span=*/0,
+      [this](fuchsia::scenic::scheduling::FuturePresentationTimes info) {
+        frames_in_flight_allowed_ = info.remaining_presents_in_flight_allowed;
 
-  PresentSession();
+        // If we're beginning with 0 allowed frames in flight we can't do
+        // anything.
+        FML_CHECK(frames_in_flight_allowed_ > 0);
+
+        VsyncRecorder::GetInstance().FuturePresentationTimesUpdate(
+            std::move(info));
+
+        // Signal is initially high indicating availability of the session.
+        ToggleSignal(vsync_event_handle_, true);
+
+        PresentSession();
+      });
 }
 
 SessionConnection::~SessionConnection() = default;
@@ -55,19 +88,22 @@ SessionConnection::~SessionConnection() = default;
 void SessionConnection::Present(
     flutter::CompositorContext::ScopedFrame& frame) {
   TRACE_EVENT0("gfx", "SessionConnection::Present");
-  TRACE_FLOW_BEGIN("gfx", "SessionConnection::PresentSession",
-                   next_present_session_trace_id_);
-  next_present_session_trace_id_++;
 
-  // Throttle vsync if presentation callback is already pending. This allows
-  // the paint tasks for this frame to execute in parallel with presentation
-  // of last frame but still provides back-pressure to prevent us from queuing
-  // even more work.
-  if (presentation_callback_pending_) {
+  // Throttle frame submission to Scenic if we already have the maximum amount
+  // of frames in flight. This allows the paint tasks for this frame to execute
+  // in parallel with the presentation of previous frame but still provides
+  // back-pressure to prevent us from enqueuing even more work.
+  if (frames_in_flight_ < kMaxFramesInFlight) {
+    TRACE_FLOW_BEGIN("gfx", "SessionConnection::PresentSession",
+                     next_present_session_trace_id_);
+    next_present_session_trace_id_++;
+    PresentSession();
+  } else {
+    // We should never exceed the max frames in flight.
+    FML_CHECK(frames_in_flight_ == kMaxFramesInFlight);
+
     present_session_pending_ = true;
     ToggleSignal(vsync_event_handle_, false);
-  } else {
-    PresentSession();
   }
 
   // Execute paint tasks and signal fences.
@@ -97,6 +133,12 @@ void SessionConnection::EnqueueClearOps() {
 
 void SessionConnection::PresentSession() {
   TRACE_EVENT0("gfx", "SessionConnection::PresentSession");
+
+  if (frames_in_flight_allowed_ == 0)
+    return;
+
+  present_session_pending_ = false;
+
   while (processed_present_session_trace_id_ < next_present_session_trace_id_) {
     TRACE_FLOW_END("gfx", "SessionConnection::PresentSession",
                    processed_present_session_trace_id_);
@@ -105,26 +147,19 @@ void SessionConnection::PresentSession() {
   TRACE_FLOW_BEGIN("gfx", "Session::Present", next_present_trace_id_);
   next_present_trace_id_++;
 
-  // Presentation callback is pending as a result of Present() call below.
-  presentation_callback_pending_ = true;
+  ++frames_in_flight_;
 
   // Flush all session ops. Paint tasks may not yet have executed but those are
   // fenced. The compositor can start processing ops while we finalize paint
   // tasks.
-  session_wrapper_.Present(
-      0,  // presentation_time. (placeholder).
-      [this, handle = vsync_event_handle_](
-          fuchsia::images::PresentationInfo presentation_info) {
-        presentation_callback_pending_ = false;
-        VsyncRecorder::GetInstance().UpdateVsyncInfo(presentation_info);
-        // Process pending PresentSession() calls.
-        if (present_session_pending_) {
-          present_session_pending_ = false;
-          PresentSession();
-        }
-        ToggleSignal(handle, true);
-      }  // callback
-  );
+  session_wrapper_.Present2(
+      /*requested_presentation_time=*/0,
+      /*requested_prediction_span=*/0,
+      [this](fuchsia::scenic::scheduling::FuturePresentationTimes info) {
+        frames_in_flight_allowed_ = info.remaining_presents_in_flight_allowed;
+        VsyncRecorder::GetInstance().FuturePresentationTimesUpdate(
+            std::move(info));
+      });
 
   // Prepare for the next frame. These ops won't be processed till the next
   // present.
