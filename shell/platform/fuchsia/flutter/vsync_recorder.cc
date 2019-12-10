@@ -33,7 +33,7 @@ VsyncInfo VsyncRecorder::GetCurrentVsyncInfo() const {
   }
 }
 
-void VsyncRecorder::FuturePresentationTimesUpdate(
+void VsyncRecorder::UpdateNextPresentationInfo(
     fuchsia::scenic::scheduling::FuturePresentationTimes info) {
   std::unique_lock<std::mutex> lock(g_mutex);
 
