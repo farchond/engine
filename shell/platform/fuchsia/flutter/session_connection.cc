@@ -131,6 +131,9 @@ void SessionConnection::EnqueueClearOps() {
 void SessionConnection::PresentSession() {
   TRACE_EVENT0("gfx", "SessionConnection::PresentSession");
 
+  // If we cannot call Present2() because we have no more Scenic frame budget,
+  // then we must wait until the OnFramePresented() event fires so we can
+  // continue our work.
   if (frames_in_flight_allowed_ == 0)
     return;
 
