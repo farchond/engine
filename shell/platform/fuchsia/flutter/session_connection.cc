@@ -36,8 +36,11 @@ SessionConnection::SessionConnection(
           fuchsia::scenic::scheduling::FramePresentedInfo info) {
         size_t num_presents_handled = info.presentation_infos.size();
 
-        // Since this event is fired on a per-presentation not per-submission
-        // basis, we may have had multiple Present2() calls all end here.
+        // Update Scenic's limit for our remaining frames in flight allowed.
+        frames_in_flight_allowed_ = info.num_presents_allowed;
+
+        // A frame was presented: Update our |frames_in_flight| to match the
+        // updated unfinalized present requests.
         frames_in_flight_ -= num_presents_handled;
         FML_CHECK(frames_in_flight_ >= 0);
 
@@ -64,11 +67,10 @@ SessionConnection::SessionConnection(
       [this](fuchsia::scenic::scheduling::FuturePresentationTimes info) {
         frames_in_flight_allowed_ = info.remaining_presents_in_flight_allowed;
 
-        // If we're beginning with 0 allowed frames in flight we can't do
-        // anything.
+        // If Scenic alloted us 0 frames to begin with, we should fail here.
         FML_CHECK(frames_in_flight_allowed_ > 0);
 
-        VsyncRecorder::GetInstance().FuturePresentationTimesUpdate(
+        VsyncRecorder::GetInstance().UpdateNextPresentationInfo(
             std::move(info));
 
         // Signal is initially high indicating availability of the session.
@@ -152,7 +154,7 @@ void SessionConnection::PresentSession() {
       /*requested_prediction_span=*/0,
       [this](fuchsia::scenic::scheduling::FuturePresentationTimes info) {
         frames_in_flight_allowed_ = info.remaining_presents_in_flight_allowed;
-        VsyncRecorder::GetInstance().FuturePresentationTimesUpdate(
+        VsyncRecorder::GetInstance().UpdateNextPresentationInfo(
             std::move(info));
       });
 
