@@ -37,13 +37,14 @@ void VsyncRecorder::UpdateNextPresentationInfo(
     fuchsia::scenic::scheduling::FuturePresentationTimes info) {
   std::unique_lock<std::mutex> lock(g_mutex);
 
-  // Get earliest vsync time that is in the future.
+  auto next_time = next_presentation_info_.presentation_time();
+  // Get the earliest vsync time that is after our recorded |presentation_time|.
   for (auto& presentation_info : info.future_presentations) {
-    if (presentation_info.presentation_time() >
-        next_presentation_info_.presentation_time()) {
-      next_presentation_info_.set_presentation_time(
-          presentation_info.presentation_time());
-      break;
+    auto current_time = presentation_info.presentation_time();
+
+    if (current_time > next_time) {
+      next_presentation_info_.set_presentation_time(current_time);
+      return;
     }
   }
 }
