@@ -95,7 +95,7 @@ void SessionConnection::Present(
                      next_present_session_trace_id_);
     next_present_session_trace_id_++;
     PresentSession();
-    
+
     // Execute paint tasks and signal fences.
     auto surfaces_to_submit = scene_update_context_.ExecutePaintTasks(frame);
 
