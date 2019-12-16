@@ -36,10 +36,9 @@ class GPUSurfaceGLDelegate : public GPUSurfaceDelegate {
   // subsequent frames.
   virtual bool GLContextFBOResetAfterPresent() const;
 
-  // Create an offscreen surface to render into before onscreen composition
-  // based on whether or not the frame will perform any operations that will
-  // require readback from the rendering target.
-  virtual bool UseOffscreenSurface(const bool needs_readback) const;
+  // Indicates whether or not the surface supports pixel readback as used in
+  // circumstances such as a BackdropFilter.
+  virtual bool SurfaceSupportsReadback() const;
 
   // A transformation applied to the onscreen surface before the canvas is
   // flushed.

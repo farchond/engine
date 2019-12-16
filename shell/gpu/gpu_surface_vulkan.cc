@@ -22,8 +22,7 @@ bool GPUSurfaceVulkan::IsValid() {
 
 // |Surface|
 std::unique_ptr<SurfaceFrame> GPUSurfaceVulkan::AcquireFrame(
-    const SkISize& size,
-    const bool needs_readback) {
+    const SkISize& size) {
   auto surface = window_.AcquireSurface();
 
   if (surface == nullptr) {
@@ -41,7 +40,7 @@ std::unique_ptr<SurfaceFrame> GPUSurfaceVulkan::AcquireFrame(
     }
     return weak_this->window_.SwapBuffers();
   };
-  return std::make_unique<SurfaceFrame>(std::move(surface),
+  return std::make_unique<SurfaceFrame>(std::move(surface), true,
                                         std::move(callback));
 }
 

@@ -83,8 +83,7 @@ bool GPUSurfaceMetal::IsValid() {
 }
 
 // |Surface|
-std::unique_ptr<SurfaceFrame> GPUSurfaceMetal::AcquireFrame(const SkISize& size,
-                                                            const bool needs_readback) {
+std::unique_ptr<SurfaceFrame> GPUSurfaceMetal::AcquireFrame(const SkISize& size) {
   if (!IsValid()) {
     FML_LOG(ERROR) << "Metal surface was invalid.";
     return nullptr;
@@ -153,7 +152,7 @@ std::unique_ptr<SurfaceFrame> GPUSurfaceMetal::AcquireFrame(const SkISize& size,
     return true;
   };
 
-  return std::make_unique<SurfaceFrame>(std::move(surface), submit_callback);
+  return std::make_unique<SurfaceFrame>(std::move(surface), true, submit_callback);
 }
 
 // |Surface|

@@ -297,8 +297,7 @@ RasterStatus Rasterizer::DoDraw(
 RasterStatus Rasterizer::DrawToSurface(flutter::LayerTree& layer_tree) {
   FML_DCHECK(surface_);
 
-  auto frame = surface_->AcquireFrame(layer_tree.frame_size(),
-                                      layer_tree.root_needs_screen_readback());
+  auto frame = surface_->AcquireFrame(layer_tree.frame_size());
 
   if (frame == nullptr) {
     return RasterStatus::kFailed;
@@ -334,6 +333,7 @@ RasterStatus Rasterizer::DrawToSurface(flutter::LayerTree& layer_tree) {
       external_view_embedder,       // external view embedder
       root_surface_transformation,  // root surface transformation
       true,                         // instrumentation enabled
+      frame->supports_readback(),   // surface supports pixel reads
       gpu_thread_merger_            // thread merger
   );
 
@@ -378,7 +378,7 @@ static sk_sp<SkData> ScreenshotLayerTreeAsPicture(
   // https://github.com/flutter/flutter/issues/23435
   auto frame = compositor_context.AcquireFrame(
       nullptr, recorder.getRecordingCanvas(), nullptr,
-      root_surface_transformation, false, nullptr);
+      root_surface_transformation, false, true, nullptr);
 
   frame->Raster(*tree, true);
 
@@ -435,7 +435,7 @@ static sk_sp<SkData> ScreenshotLayerTreeAsImage(
   // surface if we don't call the base method.
   auto frame = compositor_context.flutter::CompositorContext::AcquireFrame(
       surface_context, canvas, nullptr, root_surface_transformation, false,
-      nullptr);
+      true, nullptr);
   canvas->clear(SK_ColorTRANSPARENT);
   frame->Raster(*tree, true);
   canvas->flush();
