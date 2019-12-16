@@ -100,6 +100,13 @@ void SessionConnection::Present(
                      next_present_session_trace_id_);
     next_present_session_trace_id_++;
     PresentSession();
+
+    // Execute paint tasks and signal fences.
+    auto surfaces_to_submit = scene_update_context_.ExecutePaintTasks(frame);
+
+    // Tell the surface producer that a present has occurred so it can perform
+    // book-keeping on buffer caches.
+    surface_producer_->OnSurfacesPresented(std::move(surfaces_to_submit));
   } else {
     // We should never exceed the max frames in flight.
     FML_CHECK(frames_in_flight_ == kMaxFramesInFlight);
