@@ -162,6 +162,32 @@ class SmoothPointerDataDispatcher : public DefaultPointerDataDispatcher {
   FML_DISALLOW_COPY_AND_ASSIGN(SmoothPointerDataDispatcher);
 };
 
+class FuchsiaPointerDataDispatcher : public DefaultPointerDataDispatcher {
+ public:
+  FuchsiaPointerDataDispatcher(Delegate& delegate);
+
+  // |PointerDataDispatcer|
+  void DispatchPacket(std::unique_ptr<PointerDataPacket> packet,
+                      uint64_t trace_flow_id) override;
+
+  virtual ~FuchsiaPointerDataDispatcher();
+
+ private:
+  // If non-null, this will be a pending pointer data packet for the next frame
+  // to consume. This is used to smooth out the irregular drag events delivery.
+  // See also `DispatchPointerDataPacket` and input_events_unittests.cc.
+  std::unique_ptr<PointerDataPacket> pending_packet_;
+  int pending_trace_flow_id_ = -1;
+
+  fml::WeakPtrFactory<FuchsiaPointerDataDispatcher> weak_factory_;
+
+  void DispatchPendingPacket();
+
+  void ScheduleSecondaryVsyncCallback();
+
+  FML_DISALLOW_COPY_AND_ASSIGN(FuchsiaPointerDataDispatcher);
+};
+
 //--------------------------------------------------------------------------
 /// @brief      Signature for constructing PointerDataDispatcher.
 ///

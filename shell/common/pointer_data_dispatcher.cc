@@ -13,6 +13,10 @@ SmoothPointerDataDispatcher::SmoothPointerDataDispatcher(Delegate& delegate)
     : DefaultPointerDataDispatcher(delegate), weak_factory_(this) {}
 SmoothPointerDataDispatcher::~SmoothPointerDataDispatcher() = default;
 
+FuchsiaPointerDataDispatcher::FuchsiaPointerDataDispatcher(Delegate& delegate)
+    : DefaultPointerDataDispatcher(delegate), weak_factory_(this) {}
+FuchsiaPointerDataDispatcher::~FuchsiaPointerDataDispatcher() = default;
+
 void DefaultPointerDataDispatcher::DispatchPacket(
     std::unique_ptr<PointerDataPacket> packet,
     uint64_t trace_flow_id) {
@@ -53,6 +57,39 @@ void SmoothPointerDataDispatcher::ScheduleSecondaryVsyncCallback() {
 void SmoothPointerDataDispatcher::DispatchPendingPacket() {
   FML_DCHECK(pending_packet_ != nullptr);
   FML_DCHECK(is_pointer_data_in_progress_);
+  DefaultPointerDataDispatcher::DispatchPacket(std::move(pending_packet_),
+                                               pending_trace_flow_id_);
+  pending_packet_ = nullptr;
+  pending_trace_flow_id_ = -1;
+  ScheduleSecondaryVsyncCallback();
+}
+
+void FuchsiaPointerDataDispatcher::DispatchPacket(
+    std::unique_ptr<PointerDataPacket> packet,
+    uint64_t trace_flow_id) {
+  if (pending_packet_ != nullptr) {
+    DispatchPendingPacket();
+  }
+  pending_packet_ = std::move(packet);
+  pending_trace_flow_id_ = trace_flow_id;
+
+  ScheduleSecondaryVsyncCallback();
+}
+
+void FuchsiaPointerDataDispatcher::ScheduleSecondaryVsyncCallback() {
+  delegate_.ScheduleSecondaryVsyncCallback(
+      [dispatcher = weak_factory_.GetWeakPtr()]() {
+        if (dispatcher && dispatcher->pending_packet_ != nullptr) {
+          dispatcher->DispatchPendingPacket();
+        } else {
+          TRACE_EVENT_INSTANT0("flutter",
+                               "No input event in secondary vsync callback");
+        }
+      });
+}
+
+void FuchsiaPointerDataDispatcher::DispatchPendingPacket() {
+  FML_DCHECK(pending_packet_ != nullptr);
   DefaultPointerDataDispatcher::DispatchPacket(std::move(pending_packet_),
                                                pending_trace_flow_id_);
   pending_packet_ = nullptr;
