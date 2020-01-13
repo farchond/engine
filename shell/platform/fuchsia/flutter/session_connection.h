@@ -59,7 +59,7 @@ class SessionConnection final {
   scenic::ContainerNode& root_node() { return root_node_; }
   scenic::View* root_view() { return &root_view_; }
 
-  void Present(flutter::CompositorContext::ScopedFrame& frame);
+  void Present(flutter::CompositorContext::ScopedFrame* frame);
 
   void OnSessionSizeChangeHint(float width_change_factor,
                                float height_change_factor);
@@ -87,7 +87,7 @@ class SessionConnection final {
   // The maximum number of frames Flutter sent to Scenic that it can have
   // outstanding at any time. This is equivalent to how many times it has
   // called Present2() before receiving an OnFramePresented() event.
-  static constexpr int kMaxFramesInFlight = 2;
+  static constexpr int kMaxFramesInFlight = 3;
   int frames_in_flight_ = 0;
 
   int frames_in_flight_allowed_ = 0;

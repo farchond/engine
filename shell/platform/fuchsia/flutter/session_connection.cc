@@ -39,6 +39,7 @@ SessionConnection::SessionConnection(
   session_wrapper_.set_on_frame_presented_handler(
       [this, handle = vsync_event_handle_](
           fuchsia::scenic::scheduling::FramePresentedInfo info) {
+        FML_LOG(INFO) << "OnFramePresented";
         size_t num_presents_handled = info.presentation_infos.size();
 
         // Update Scenic's limit for our remaining frames in flight allowed.
@@ -88,7 +89,7 @@ SessionConnection::SessionConnection(
 SessionConnection::~SessionConnection() = default;
 
 void SessionConnection::Present(
-    flutter::CompositorContext::ScopedFrame& frame) {
+    flutter::CompositorContext::ScopedFrame* frame) {
   TRACE_EVENT0("gfx", "SessionConnection::Present");
 
   // Throttle frame submission to Scenic if we already have the maximum amount
@@ -101,12 +102,14 @@ void SessionConnection::Present(
     next_present_session_trace_id_++;
     PresentSession();
 
-    // Execute paint tasks and signal fences.
-    auto surfaces_to_submit = scene_update_context_.ExecutePaintTasks(frame);
+    if (frame) {
+      // Execute paint tasks and signal fences.
+      auto surfaces_to_submit = scene_update_context_.ExecutePaintTasks(*frame);
 
-    // Tell the surface producer that a present has occurred so it can perform
-    // book-keeping on buffer caches.
-    surface_producer_->OnSurfacesPresented(std::move(surfaces_to_submit));
+      // Tell the surface producer that a present has occurred so it can perform
+      // book-keeping on buffer caches.
+      surface_producer_->OnSurfacesPresented(std::move(surfaces_to_submit));
+    }
   } else {
     // We should never exceed the max frames in flight.
     FML_CHECK(frames_in_flight_ == kMaxFramesInFlight);
@@ -170,6 +173,7 @@ void SessionConnection::PresentSession() {
       /*requested_presentation_time=*/0,
       /*requested_prediction_span=*/0,
       [this](fuchsia::scenic::scheduling::FuturePresentationTimes info) {
+        FML_LOG(INFO) << "Present2 Immediate Callback";
         frames_in_flight_allowed_ = info.remaining_presents_in_flight_allowed;
         VsyncRecorder::GetInstance().UpdateNextPresentationInfo(
             std::move(info));
