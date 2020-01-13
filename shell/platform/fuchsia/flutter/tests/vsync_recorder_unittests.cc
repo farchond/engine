@@ -4,8 +4,16 @@
 
 #include <gtest/gtest.h>
 
+#include <fuchsia/sys/cpp/fidl.h>
+#include <lib/sys/cpp/component_context.h>
+
+//#include <fuchsia/sys/component_context/cpp/fidl.h>
+//#include <fuchsia/sys/index/cpp/fidl.h>
 #include "flutter/shell/platform/fuchsia/flutter/logging.h"
 #include "flutter/shell/platform/fuchsia/flutter/vsync_recorder.h"
+
+#include "flutter/shell/platform/fuchsia/flutter/runner.h"
+#include "flutter/shell/platform/fuchsia/flutter/session_connection.h"
 
 using namespace flutter_runner;
 

@@ -1,0 +1,4 @@
+# Flutter testing.
+alias fltestbuild='autoninja -C $FLUTTER_DIR/src/out/fuchsia_release_arm64 flutter_runner_tests-0.far'
+alias fltestpub='$FLUTTER_DIR/src/fuchsia/sdk/linux/tools/pm publish -a -r $FUCHSIA_DIR/out/astro/amber-files/ -f $FLUTTER_DIR/src/out/fuchsia_release_arm64/flutter_runner_tests-0.far'
+alias fltestrun='fx shell run fuchsia-pkg://fuchsia.com/flutter_runner_tests#meta/flutter_runner_tests.cmx'
