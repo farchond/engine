@@ -29,7 +29,8 @@
       "fuchsia.logger.LogSink",
       "fuchsia.sysmem.Allocator",
       "fuchsia.sys.Environment",
-      "fuchsia.ui.app.ViewProvider"
+      "fuchsia.ui.app.ViewProvider",
+      "fuchsia.ui.policy.Presenter"
     ]
   }
 }
