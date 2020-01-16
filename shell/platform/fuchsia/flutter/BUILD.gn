@@ -547,6 +547,7 @@ executable("flutter_runner_scenic_unittests") {
            "//third_party/dart/runtime/platform:libdart_platform_jit",
            "//third_party/icu",
            "$fuchsia_sdk_root/pkg:trace-provider-so",
+           "$fuchsia_sdk_root/fidl:fuchsia.ui.policy",
            "//third_party/skia",
          ] + flutter_deps + fuchsia_deps
 

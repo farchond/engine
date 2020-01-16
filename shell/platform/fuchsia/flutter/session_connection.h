@@ -27,6 +27,7 @@ namespace flutter_runner {
 // maintaining the Scenic session connection and presenting node updates.
 class SessionConnection final {
  public:
+  // TODO: Inject OFP for testing?
   SessionConnection(std::string debug_label,
                     fuchsia::ui::views::ViewToken view_token,
                     fidl::InterfaceHandle<fuchsia::ui::scenic::Session> session,
