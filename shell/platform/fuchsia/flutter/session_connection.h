@@ -28,7 +28,6 @@ namespace flutter_runner {
 // maintaining the Scenic session connection and presenting node updates.
 class SessionConnection final {
  public:
-  // TODO: Inject OFP for testing?
   SessionConnection(std::string debug_label,
                     fuchsia::ui::views::ViewToken view_token,
                     scenic::ViewRefPair view_ref_pair,
@@ -76,6 +75,8 @@ class SessionConnection final {
   flutter::SceneUpdateContext scene_update_context_;
 
   zx_handle_t vsync_event_handle_;
+
+  bool initialized_ = false;
 
   // A flow event trace id for following |Session::Present| calls into
   // Scenic.  This will be incremented each |Session::Present| call.  By
