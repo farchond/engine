@@ -23,6 +23,9 @@
 
 namespace flutter_runner {
 
+using on_frame_presented_event =
+    std::function<void(fuchsia::scenic::scheduling::FramePresentedInfo)>;
+
 // The component residing on the GPU thread that is responsible for
 // maintaining the Scenic session connection and presenting node updates.
 class SessionConnection final {
@@ -31,6 +34,7 @@ class SessionConnection final {
                     fuchsia::ui::views::ViewToken view_token,
                     fidl::InterfaceHandle<fuchsia::ui::scenic::Session> session,
                     fml::closure session_error_callback,
+                    on_frame_presented_event on_frame_presented_callback,
                     zx_handle_t vsync_event_handle);
 
   ~SessionConnection();
@@ -71,6 +75,7 @@ class SessionConnection final {
 
   std::unique_ptr<VulkanSurfaceProducer> surface_producer_;
   flutter::SceneUpdateContext scene_update_context_;
+  on_frame_presented_event on_frame_presented_callback_;
 
   zx_handle_t vsync_event_handle_;
 

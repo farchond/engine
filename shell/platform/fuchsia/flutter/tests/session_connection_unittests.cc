@@ -58,22 +58,40 @@ class SessionConnectionTest : public ::testing::Test {
 TEST_F(SessionConnectionTest, SimplePresentTest) {
   fml::closure on_session_error_callback = []() { FML_CHECK(false); };
 
+  uint64_t num_presents_handled = 0;
+  on_frame_presented_event on_frame_presented_callback =
+      [&num_presents_handled](
+          fuchsia::scenic::scheduling::FramePresentedInfo info) {
+        num_presents_handled += info.presentation_infos.size();
+      };
+
   flutter_runner::SessionConnection session_connection(
       "debug label", std::move(view_token_), std::move(session_),
-      on_session_error_callback, vsync_event_.get());
+      on_session_error_callback, on_frame_presented_callback,
+      vsync_event_.get());
 
   for (int i = 0; i < 200; ++i) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     session_connection.Present(nullptr);
   }
+
+  EXPECT_GT(num_presents_handled, 0u);
 }
 
 TEST_F(SessionConnectionTest, BatchedPresentTest) {
   fml::closure on_session_error_callback = []() { FML_CHECK(false); };
 
+  uint64_t num_presents_handled = 0;
+  on_frame_presented_event on_frame_presented_callback =
+      [&num_presents_handled](
+          fuchsia::scenic::scheduling::FramePresentedInfo info) {
+        num_presents_handled += info.presentation_infos.size();
+      };
+
   flutter_runner::SessionConnection session_connection(
       "debug label", std::move(view_token_), std::move(session_),
-      on_session_error_callback, vsync_event_.get());
+      on_session_error_callback, on_frame_presented_callback,
+      vsync_event_.get());
 
   for (int i = 0; i < 200; ++i) {
     if (i % 10 == 0) {
@@ -81,6 +99,8 @@ TEST_F(SessionConnectionTest, BatchedPresentTest) {
     }
     session_connection.Present(nullptr);
   }
+
+  EXPECT_GT(num_presents_handled, 0u);
 }
 
 }  // namespace flutter_runner_test
