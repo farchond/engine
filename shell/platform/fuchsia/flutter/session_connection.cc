@@ -18,6 +18,7 @@ SessionConnection::SessionConnection(
     scenic::ViewRefPair view_ref_pair,
     fidl::InterfaceHandle<fuchsia::ui::scenic::Session> session,
     fml::closure session_error_callback,
+    on_frame_presented_event on_frame_presented_callback,
     zx_handle_t vsync_event_handle)
     : debug_label_(std::move(debug_label)),
       session_wrapper_(session.Bind(), nullptr),
@@ -30,6 +31,7 @@ SessionConnection::SessionConnection(
       surface_producer_(
           std::make_unique<VulkanSurfaceProducer>(&session_wrapper_)),
       scene_update_context_(&session_wrapper_, surface_producer_.get()),
+      on_frame_presented_callback_(std::move(on_frame_presented_callback)),
       vsync_event_handle_(vsync_event_handle) {
   session_wrapper_.set_error_handler(
       [callback = session_error_callback](zx_status_t status) { callback(); });
@@ -39,15 +41,17 @@ SessionConnection::SessionConnection(
   session_wrapper_.set_on_frame_presented_handler(
       [this, handle = vsync_event_handle_](
           fuchsia::scenic::scheduling::FramePresentedInfo info) {
-        size_t num_presents_handled = info.presentation_infos.size();
-
         // Update Scenic's limit for our remaining frames in flight allowed.
+        size_t num_presents_handled = info.presentation_infos.size();
         frames_in_flight_allowed_ = info.num_presents_allowed;
 
         // A frame was presented: Update our |frames_in_flight| to match the
         // updated unfinalized present requests.
         frames_in_flight_ -= num_presents_handled;
         FML_DCHECK(frames_in_flight_ >= 0);
+
+        // Call the client-provided callback once we are done using |info|.
+        on_frame_presented_callback_(std::move(info));
 
         if (present_session_pending_) {
           PresentSession();
