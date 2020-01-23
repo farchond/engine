@@ -51,7 +51,8 @@ class ScopedFrame final : public flutter::CompositorContext::ScopedFrame {
     {
       // Flush all pending session ops.
       TRACE_EVENT0("flutter", "SessionPresent");
-      session_connection_.Present(*this);
+
+      session_connection_.Present(this);
     }
 
     return flutter::RasterStatus::kSuccess;
@@ -73,6 +74,7 @@ CompositorContext::CompositorContext(
                           std::move(view_ref_pair),
                           std::move(session),
                           session_error_callback,
+                          [](auto) {},
                           vsync_event_handle) {}
 
 void CompositorContext::OnSessionMetricsDidChange(
