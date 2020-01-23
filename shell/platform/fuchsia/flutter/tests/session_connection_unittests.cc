@@ -66,9 +66,9 @@ TEST_F(SessionConnectionTest, SimplePresentTest) {
       };
 
   flutter_runner::SessionConnection session_connection(
-      "debug label", std::move(view_token_), std::move(session_),
-      on_session_error_callback, on_frame_presented_callback,
-      vsync_event_.get());
+      "debug label", std::move(view_token_), scenic::ViewRefPair::New(),
+      std::move(session_), on_session_error_callback,
+      on_frame_presented_callback, vsync_event_.get());
 
   for (int i = 0; i < 200; ++i) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -89,9 +89,9 @@ TEST_F(SessionConnectionTest, BatchedPresentTest) {
       };
 
   flutter_runner::SessionConnection session_connection(
-      "debug label", std::move(view_token_), std::move(session_),
-      on_session_error_callback, on_frame_presented_callback,
-      vsync_event_.get());
+      "debug label", std::move(view_token_), scenic::ViewRefPair::New(),
+      std::move(session_), on_session_error_callback,
+      on_frame_presented_callback, vsync_event_.get());
 
   for (int i = 0; i < 200; ++i) {
     if (i % 10 == 0) {
