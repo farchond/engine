@@ -35,7 +35,7 @@ class VsyncWaiter final : public flutter::VsyncWaiter {
   fml::WeakPtrFactory<VsyncWaiter> weak_factory_;
 
   static constexpr fml::TimeDelta vsync_offset =
-      fml::TimeDelta::FromNanoseconds(0);
+      fml::TimeDelta::FromMilliseconds(10);
 
   // For accessing the VsyncWaiter via the UI thread, necessary for the callback
   // for AwaitVSync()

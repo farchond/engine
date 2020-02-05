@@ -91,6 +91,10 @@ class SessionConnection final {
   uint64_t next_present_session_trace_id_ = 0;
   uint64_t processed_present_session_trace_id_ = 0;
 
+  fml::TimePoint last_targeted_present_ =
+      fml::TimePoint::FromEpochDelta(fml::TimeDelta::FromMilliseconds(0));
+  fml::TimePoint present_requested_time_ = fml::TimePoint::Min();
+
   // The maximum number of frames Flutter sent to Scenic that it can have
   // outstanding at any time. This is equivalent to how many times it has
   // called Present2() before receiving an OnFramePresented() event.
@@ -98,6 +102,25 @@ class SessionConnection final {
   int frames_in_flight_ = 0;
 
   int frames_in_flight_allowed_ = 0;
+
+  // Hosts future (latch_point, vsync) pairs in chronological order.
+  std::deque<std::pair<fml::TimePoint, fml::TimePoint>>
+      future_presentation_infos_;
+
+  // The minimum amount of time Flutter needs to build a frame. In other words,
+  // this is the minimal amount of time Flutter will use to target Scenic latch
+  // points.
+  //
+  // The earliest latch point Flutter would target is Now() + this value, for
+  // some Now(). Therefore, it is important to note when exactly this value is
+  // used, as it may only partially account for Flutter's frame build steps.
+  fml::TimeDelta minimum_frame_build_time_ =
+      fml::TimeDelta::FromMilliseconds(20);
+
+  // kMaxFramesInFlight frames, assuming 60Hz display. This value can be changed
+  // later.
+  fml::TimeDelta max_future_vsync_offset_ =
+      fml::TimeDelta::FromMilliseconds(kMaxFramesInFlight * 17);
 
   bool present_session_pending_ = false;
 

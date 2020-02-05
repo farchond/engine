@@ -6,6 +6,7 @@
 
 #include "flutter/shell/common/persistent_cache.h"
 
+#include <thread>
 #include <utility>
 
 #include "third_party/skia/include/core/SkEncodedImageFormat.h"
@@ -111,11 +112,16 @@ void Rasterizer::DrawLastLayerTree() {
 
 void Rasterizer::Draw(fml::RefPtr<Pipeline<flutter::LayerTree>> pipeline) {
   TRACE_EVENT0("flutter", "GPURasterizer::Draw");
+
   if (gpu_thread_merger_ && !gpu_thread_merger_->IsOnRasterizingThread()) {
     // we yield and let this frame be serviced on the right thread.
     return;
   }
   FML_DCHECK(task_runners_.GetGPUTaskRunner()->RunsTasksOnCurrentThread());
+
+  // Used for testing "delays" in Flutter CPU work.
+  // auto Rand = rand();
+  // std::this_thread::sleep_for(std::chrono::milliseconds(Rand % 10));
 
   RasterStatus raster_status = RasterStatus::kFailed;
   Pipeline<flutter::LayerTree>::Consumer consumer =

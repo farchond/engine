@@ -100,13 +100,13 @@ fml::TimePoint VsyncWaiter::SnapToNextPhase(
   if (presentation_interval <= fml::TimeDelta::Zero()) {
     FML_LOG(ERROR) << "Presentation interval must be positive. The value was: "
                    << presentation_interval.ToMilliseconds() << "ms.";
-    return now;
+    return fml::TimePoint::FromEpochDelta(fml::TimeDelta::FromNanoseconds(0));
   }
 
   if (last_frame_presentation_time >= now) {
     FML_LOG(ERROR)
         << "Last frame was presented in the future. Clamping to now.";
-    return now + presentation_interval;
+    return fml::TimePoint::FromEpochDelta(fml::TimeDelta::FromNanoseconds(0));
   }
 
   const fml::TimeDelta time_since_last_presentation =
