@@ -52,12 +52,8 @@ void VsyncWaiter::AsyncWaitForVsync(const Callback& callback) {
       return;
     }
     callback_ = std::move(callback);
-    if (!secondary_callbacks_.empty()) {
-      // Return directly as `AwaitVSync` is already called by
-      // `ScheduleSecondaryCallback`.
-      return;
-    }
   }
+
   AwaitVSync();
 }
 
@@ -86,7 +82,6 @@ void VsyncWaiter::ScheduleSecondaryCallback(uintptr_t id,
       return;
     }
   }
-  AwaitVSync();
 }
 
 void VsyncWaiter::FireCallback(fml::TimePoint frame_start_time,
