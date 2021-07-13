@@ -193,7 +193,10 @@ DefaultSessionConnection::DefaultSessionConnection(
 
         // A frame was presented: Update our |frames_in_flight| to match the
         // updated unfinalized present requests.
-        frames_in_flight_ -= num_presents_handled;
+        {
+          std::lock_guard<std::mutex> lock(mutex_);
+          frames_in_flight_ -= num_presents_handled;
+        }
         TRACE_DURATION("gfx", "OnFramePresented", "frames_in_flight",
                        frames_in_flight_, "max_frames_in_flight",
                        kMaxFramesInFlight, "num_presents_handled",
@@ -307,8 +310,10 @@ void DefaultSessionConnection::PresentSession() {
   TRACE_FLOW_BEGIN("gfx", "Session::Present", next_present_trace_id_);
   next_present_trace_id_++;
 
-  ++frames_in_flight_;
-
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    ++frames_in_flight_;
+  }
   // Flush all session ops. Paint tasks may not yet have executed but those are
   // fenced. The compositor can start processing ops while we finalize paint
   // tasks.
